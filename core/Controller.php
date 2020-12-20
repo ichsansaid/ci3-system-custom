@@ -49,6 +49,130 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  * @author		EllisLab Dev Team
  * @link		https://codeigniter.com/user_guide/general/controllers.html
  */
+
+class Room{
+	private $parent;
+	private $list_room_replace;
+	private $list_room_declare;
+	private $list_room_will_replace;
+	private $currentRoom;
+	private $data;
+	private $CI;
+
+
+	public function __construct($will_replace, $ci, $data)
+	{
+		$this->list_room_will_replace = $will_replace;
+		$this->CI = $ci;
+		$this->data = $data;
+	}
+
+	public function extend($url){
+		$this->parent = $url;
+		foreach($this->list_room_will_replace as $key=>$value){
+			$this->list_room_replace[$key] = $value;
+		}
+		$obj = new Room($this->list_room_replace, $this->CI, $this->data);
+		$this->CI->load->view($url, ['room'=>$obj]);
+	}
+
+	public function declare($room){
+		if(isset($this->list_room_will_replace[$room])){
+			echo $this->list_room_will_replace[$room];
+			unset($this->list_room_will_replace[$room]);
+		};
+	}
+
+	public function open($room){
+		if($this->currentRoom != NULL){
+			show_error("You must close the room before open the room again");
+		} else {
+			$this->currentRoom = $room;
+			if(!isset($this->list_room_replace[$room])){
+				ob_start();
+			}
+		}
+	}
+
+	public function close(){
+		if($this->currentRoom == NULL){
+			show_error("You currently not open in any Room");
+		} else {
+			if(!isset($this->list_room_replace[$this->currentRoom])){
+				$html = ob_get_clean();
+				$this->list_room_replace[$this->currentRoom] = $html;
+			}
+			$this->currentRoom=NULL;
+		}
+	}
+	
+	public function include($view, $data=null){
+		$room = new Room([], $this->CI, $data);
+		$r = $this->CI->load->view($view, ['room'=>$room]);
+	}
+
+	public function data($key, $default = NULL){
+		if($default != NULL){
+			if(isset($this->data[$key])){
+				if($this->data[$key] == NULL){
+					return $default;
+				}
+			}
+			if($this->data[$key] == NULL){
+				return $default;
+			}
+		}
+		return $this->data[$key];
+	}
+
+	public function alldata($params=NULL,$type = NULL){
+		if($type==NULL){
+			$type='only';
+			if($params == NULL){
+				$params = $this->data;
+			}
+		}
+		if($params == NULL){
+			$params = [];
+		}
+		$ret = []; 
+		$dict_params = [];
+		foreach($params as $key=>$value){
+			$dict_params[$value] = 0;
+		}
+		if($type == 'except'){
+			foreach($this->data as $key=>$value){
+				if(!isset($dict_params[$key])){
+					$ret[$key]=$value;
+				}
+			}
+			return $ret;
+		} else {
+			foreach($this->data as $key=>$value){
+				if(isset($dict_params[$key])){
+					$ret[$key]  =$value;
+				}
+			}
+			return $ret;
+		}
+	}
+}
+
+class RoomLoader{
+	private $CI;
+	private $shape;
+	public function __construct($ci)
+	{
+		$this->CI = $ci;
+	}
+
+	public function load($view, $data=null){
+		$room = new Room([], $this->CI, $data);
+		$this->CI->load->view($view, ['room'=>$room]);
+	}
+	
+}
+
 class CI_Controller {
 
 	/**
@@ -70,6 +194,12 @@ class CI_Controller {
 	 *
 	 * @return	void
 	 */
+
+	protected $middlewares = array();
+	private $middlewares_obj = [];
+	protected $options_middlewares = [];
+	public $room;
+	
 	public function __construct()
 	{
 		self::$instance =& $this;
@@ -84,6 +214,8 @@ class CI_Controller {
 
 		$this->load =& load_class('Loader', 'core');
 		$this->load->initialize();
+		$this->room = new RoomLoader($this);
+		$this->runMiddleware();
 		log_message('info', 'Controller Class Initialized');
 	}
 
@@ -98,6 +230,43 @@ class CI_Controller {
 	public static function &get_instance()
 	{
 		return self::$instance;
+	}
+
+	
+    protected function runMiddleware(){
+		$this->load->helper('inflector');
+        foreach($this->middlewares as $middleware){
+			$is_filter = true;
+			$options=[];
+            if(isset($this->options_middlewares[$middleware])){
+                $options = $this->options_middlewares[$middleware];
+                $type = isset($options['type_method']) ? $options['type_method'] : 'only';
+				$methods = $options['list_method'];
+                if ($type == 'except') {
+					$is_filter = !(in_array($this->router->method, $methods));
+                } else if ($type == 'only') {
+					$is_filter = in_array($this->router->method, $methods);
+                }
+			}
+            $file = ucfirst(camelize($middleware));
+            if ($is_filter == true) {
+                if (file_exists(APPPATH . 'middlewares/' . $file . '.php')) {
+					require APPPATH . 'middlewares/' . $file . '.php';
+					$param = isset($options['params']) ? $options['params'] : [];
+					$object = new $file($this, $param);
+					$cek = $object->run();
+					$ea = $object->post_run($cek);
+					if(isset($options['break']) && $cek && $options['break'] == true) break;
+					$this->middlewares_obj[$middleware] = $object;
+                } else {
+                    if (ENVIRONMENT == 'development') {
+                        show_error('File Middleware not exist: ' . $file . '.php');
+                    } else {
+                        show_error('Internal server error.');
+                    }
+                }
+            }
+        }
 	}
 
 }
