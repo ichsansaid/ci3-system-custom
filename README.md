@@ -4,6 +4,13 @@ This is my customization system in Codeigniter 3
 
 Just replace all folder in system
 
+Feature :
+1. Room (Views Layout)
+
+2. Middleware
+
+3. Route Group
+
 # Documentation Room Feature
 
 ### Declare a room
