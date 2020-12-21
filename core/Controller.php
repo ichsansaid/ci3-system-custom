@@ -262,7 +262,11 @@ class CI_Controller {
                 if (file_exists(APPPATH . 'middlewares/' . $file . '.php')) {
 					require APPPATH . 'middlewares/' . $file . '.php';
 					$param = isset($options['params']) ? $options['params'] : [];
-					$param = array_merge($param, $data['params'][$middleware]);
+					if(isset($data['params'])){
+						if(isset($data['params'][$middleware])){
+							$param = array_merge($param, $data['params'][$middleware]);
+						}
+					}
 					$object = new $file($this, $param);
 					$cek = $object->run();
 					$ea = $object->post_run($cek);
