@@ -244,6 +244,7 @@ class CI_Controller {
 			}
 		}
 		$this->middlewares = array_merge($this->middlewares, $data['middlewares']);
+
         foreach($this->middlewares as $middleware){
 			$is_filter = true;
 			$options=[];
