@@ -104,6 +104,81 @@ content.html
 <?=$room->extend('welcome')?>
 ```
 
+# Documentation Middleware Feature
+Create middlewares folder in application
+
+Example IsLoginMiddleware.php
+```sh
+<?php
+class IsLoginMiddleware extends Middleware{
+	
+	public function run(): bool
+	{
+		$params = $this->getParams();
+		if($params['auth'] == true)
+		{
+			return !isset($_SESSION) && ($_SESSION['logged_in'] == false); 
+		}
+		else if($params['auth'] == false)
+		{
+			return isset($_SESSION) && ($_SESSION['logged_in'] == true);
+		}
+	}
+
+	public function post_run($sucess)
+	{
+		$params = $this->getParams();
+		if($params['auth'] == true)
+		{
+			if(!$sucess)
+			{
+				echo "login";
+			}
+			return true;
+		}
+		else if($params['auth'] == false)
+		{
+			if(!$sucess)
+			{
+				echo "not login";
+			}
+			return true;
+		}
+	}
+}
+```
+Method post_run() will get called after method run(), and params $success in post_run is return value from run()
+
+
+# Documentation Route Group Feature
+Example routes.php
+```sh
+$route['dashboard/'] = [
+	'id'=>'dashboard',
+	'middleware'=>['IsLoginMiddleware', 'DashboardMiddleware'],
+	'params' => [
+		'IsLoginMiddleware'=> [
+			'auth'=>true
+		]
+	],
+	'child'=> [
+		'admin'=>[
+			'id'=>'admin',
+			'middleware'=>['AdminMiddleware', '-DashboardMiddleware'],
+			'child' => 'dashboard/admin/index'
+		],
+		'staff'=>[
+			'id'=>'admin',
+			'middleware'=>['StaffMiddleware'],
+			'params'=>[
+				'IsLoginMiddleware'=>[
+					'auth'=>false
+				]
+			]
+		]
+	]
+];
+```
 
 # Todos
 
