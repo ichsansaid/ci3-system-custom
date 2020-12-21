@@ -64,6 +64,10 @@ class CI_Router {
 	 */
 	public $routes =	array();
 	public $routes_id = array();
+	public $routes_middleware = array();
+	public $routes_middleware_options = array();
+	public $uri_routes = '';
+	public $selected_routes_id = [];
 	/**
 	 * Current class name
 	 *
@@ -158,13 +162,14 @@ class CI_Router {
 		return self::$instance;
 	}
 
-	public function get_route_by_id()
+	public function get_route_id()
 	{
 		return $this->routes_id;
 	}
 
-	protected function _find_group($id, $key_parent,$arr)
+	protected function _find_group($id, $middleware, $key_parent,$arr)
 	{
+		
 		if(is_array($arr)){
 			foreach($arr as $key=>$value){
 				if(isset($value['id'])){
@@ -172,14 +177,106 @@ class CI_Router {
 				} else {
 					array_push($id, $key);
 				}
-				$this->_find_group($id, $key_parent.$key, $value['child']);
+				$not_set = [];
+				$params_before = [];
+				if(isset($value['middleware'])){
+					foreach($value['middleware'] as $val){
+						$is_except = substr($val, 0, 1) == "-";
+						if($is_except == false){
+							if(!isset($middleware[$val])){
+								$middleware[$val] = 1;
+							}
+						} else {
+							$val = substr($val, 1, strlen($val) - 1);
+							if(isset($middleware[$val])){
+								$params_before[$val] = $middleware[$val];
+								unset($middleware[$val]);
+							} else {
+								$not_set[$val] = 1;
+							}
+						}
+					}
+				}
+				$this->_find_group($id, $middleware, $key_parent.$key, $value['child']);
 				array_pop($id);
+				if(isset($value['middleware'])){
+					foreach($value['middleware'] as $val){
+						$is_except = substr($val, 0, 1) == "-";
+						if($is_except == false){
+							unset($middleware[$val]);
+						} else {
+							$val = substr($val, 1, strlen($val) - 1);
+							if(!isset($not_set[$val])){
+								if(!isset($middleware[$val])){
+									$middleware[$val] = 1;
+								}
+							}
+						}
+					}
+				}
 			}
 		} else {
 			$this->routes[$key_parent] = $arr;
+			$this->routes_middleware[$key_parent] = $middleware;
 			$this->routes_id[implode(":",$id)] = $key_parent;
+			if($this->uri->uri_string == $key_parent){
+				$this->selected_routes_id = $id;
+			}
+			
 			return;
 		}
+	}
+
+	public function _get_params()
+	{
+		if (file_exists(APPPATH.'config/routes.php'))
+		{
+			include(APPPATH.'config/routes.php');
+		}
+
+		if (file_exists(APPPATH.'config/'.ENVIRONMENT.'/routes.php'))
+		{
+			include(APPPATH.'config/'.ENVIRONMENT.'/routes.php');
+		}
+		$params = $this->routes_middleware[$this->uri->uri_string];
+		$return = [];
+		foreach($this->selected_routes_id as $id)
+		{
+			foreach($route as $key=>$value){
+				if(is_array($value)){
+					if($value['id'] == $id){
+						if(isset($value['params'])){
+							foreach($value['params'] as $kval=>$params1){
+								$select = null;
+								foreach($params as $kpar=>$params2){
+									if($kval == $kpar) {
+										$select = $params2;
+									}
+								}
+								if($select !== null){
+									$return[$kval] = $params1;
+								}
+							}
+						}
+						$route = $value['child'];
+					}
+				}
+			}
+		}
+		return $return;
+	}
+
+	public function _get_middleware()
+	{
+		$params = $this->_get_params();
+		$middleware = [];
+		foreach($params as $key=>$value){
+			array_push($middleware, $key);
+		}
+		return [
+			'middlewares' => $middleware,
+			'params' => $params
+		];
 	}
 
 	protected function _set_routing()
@@ -196,7 +293,6 @@ class CI_Router {
 		{
 			include(APPPATH.'config/'.ENVIRONMENT.'/routes.php');
 		}
-
 		// Validate & get reserved routes
 		if (isset($route) && is_array($route))
 		{
@@ -205,12 +301,27 @@ class CI_Router {
 			unset($route['default_controller'], $route['translate_uri_dashes']);
 			foreach($route as $key=>$value){
 				if(is_array($value)){
-					$this->_find_group(isset($value['id']) ? [$value['id']] : [$key], $key,$value['child']);
+					$middleware = [];
+					if(isset($value['middleware'])){
+						foreach($value['middleware'] as $k=>$val){
+							$is_except = substr($val, 0, 1) === "-";
+							if($is_except == false){
+								$middleware[$val] = 1;
+							} else {
+								$val = substr($val, 1, strlen($val) - 1);
+								unset($middleware[$val]);
+							}
+						}
+					}
+					$ids = isset($value['id']) ? [$value['id']] : [$key];
+					$this->_find_group($ids, $middleware,  $key,$value['child']);
 				} else {
 					$this->routes[$key] = $value;
 				}
 			}
+			
 		}
+		$this->_get_params();
 		// Are query strings enabled in the config file? Normally CI doesn't utilize query strings
 		// since URI segments are more search-engine friendly, but they can optionally be used.
 		// If this feature is enabled, we will gather the directory/class/method a little differently

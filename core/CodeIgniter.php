@@ -337,7 +337,6 @@ if (file_exists(APPPATH.'core/'.$CFG->config['subclass_prefix'].'Controller.php'
 	}
 
 	$RTR =& load_class('Router', 'core', isset($routing) ? $routing : NULL);
-
 /*
  * ------------------------------------------------------
  *  Instantiate the output class

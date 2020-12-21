@@ -516,8 +516,7 @@ if ( ! function_exists('route_url'))
 {
 	function route_url($id){
 		$my_route =& get_router_instance();
-		$my_route->get_route_by_id();
-		return base_url($my_route->get_route_by_id()[$id]);
+		return base_url($my_route->get_route_id()[$id]);
 	}
 }
 

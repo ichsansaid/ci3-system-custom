@@ -215,6 +215,7 @@ class CI_Controller {
 		$this->load =& load_class('Loader', 'core');
 		$this->load->initialize();
 		$this->room = new RoomLoader($this);
+		
 		$this->runMiddleware();
 		log_message('info', 'Controller Class Initialized');
 	}
@@ -235,6 +236,14 @@ class CI_Controller {
 	
     protected function runMiddleware(){
 		$this->load->helper('inflector');
+		$rtr =& get_router_instance();
+		$data = $rtr->_get_middleware();
+		foreach($this->middlewares as $mid){
+			if(isset($data['params'][$mid])){
+				unset($this->middlewares[$mid]);
+			}
+		}
+		$this->middlewares = array_merge($this->middlewares, $data['middlewares']);
         foreach($this->middlewares as $middleware){
 			$is_filter = true;
 			$options=[];
@@ -253,6 +262,7 @@ class CI_Controller {
                 if (file_exists(APPPATH . 'middlewares/' . $file . '.php')) {
 					require APPPATH . 'middlewares/' . $file . '.php';
 					$param = isset($options['params']) ? $options['params'] : [];
+					$param = array_merge($param, $data['params'][$middleware]);
 					$object = new $file($this, $param);
 					$cek = $object->run();
 					$ea = $object->post_run($cek);
