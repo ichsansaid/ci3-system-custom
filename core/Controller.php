@@ -198,6 +198,7 @@ class CI_Controller {
 	protected $middlewares = array();
 	private $middlewares_obj = [];
 	protected $options_middlewares = [];
+	protected $models = [];
 	public $room;
 	
 	public function __construct()
@@ -217,6 +218,13 @@ class CI_Controller {
 		$this->room = new RoomLoader($this);
 		
 		$this->runMiddleware();
+		foreach($this->models as $row){
+			if(count($row) > 1){
+				$this->load->model($row[0], $row[1]);
+			} else {
+				$this->load->model($row[0]);
+			}
+		}
 		log_message('info', 'Controller Class Initialized');
 	}
 
@@ -233,6 +241,11 @@ class CI_Controller {
 		return self::$instance;
 	}
 
+	protected function JsonResponse($arr){
+		header('Content-Type: application/json');
+		echo json_encode($arr);
+	}
+
 	
     protected function runMiddleware(){
 		$this->load->helper('inflector');
@@ -244,7 +257,6 @@ class CI_Controller {
 			}
 		}
 		$this->middlewares = array_merge($this->middlewares, $data['middlewares']);
-
         foreach($this->middlewares as $middleware){
 			$is_filter = true;
 			$options=[];

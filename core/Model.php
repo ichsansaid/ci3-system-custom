@@ -54,7 +54,85 @@ class CI_Model {
 	 * @link	https://github.com/bcit-ci/CodeIgniter/issues/5332
 	 * @return	void
 	 */
-	public function __construct() {}
+
+	private $data_model = [];
+	private $data_clean;
+	private $form_error = [];
+	private $field_use;
+	protected $form_lang = [];
+	protected $main_table;
+
+	public function __construct() {
+
+	}
+
+	public function data($data = -1){
+		if($data == -1){
+			return $this->data_model;
+		}
+		$this->data_model = $data;
+		return $this;
+	}
+
+	public function data_clean(){
+		return $this->data_clean;
+	}
+
+	public function form_error(){
+		return $this->form_error;
+	}
+
+	public function use_form($id){
+		$this->field_use = $id;
+		return $this;
+	}
+
+	public function get_form(){
+		return $this->accepted_form[$this->field_use];
+	}
+
+	public function valid(){
+		$id = $this->field_use;
+		if(isset($this->accepted_form[$id])){
+			$this->form_validation->set_rules($this->data_model);
+			foreach($this->accepted_form[$id] as $key=>$value){
+				if(count($this->form_lang) > 1){
+					$this->form_validation->set_rules($key, $value[0], isset($value[1]) ? $value[1] : [], $this->form_lang);
+				} else {
+					$this->form_validation->set_rules($key, $value[0], isset($value[1]) ? $value[1] : []);
+				}
+			}
+			if($this->form_validation->run() == true){
+				foreach($this->get_form() as $key=>$value){
+					$this->data_clean[$key] = $this->data_model[$key];
+				}
+				return true;
+			} else {
+				$this->form_error = $this->form_validation->error_array();
+				return false;
+			}
+		} else {
+			return true;
+		}
+	}
+
+	public function db_get(){
+		return $this->db->get($this->main_table);
+	}
+
+	public function db_insert($data){
+		return $this->db->insert($this->main_table, $data);
+	}
+
+	public function db_update($data, $where = []){
+		return $this->db->update($this->main_table, $data, $where);
+	}
+
+	public function db_delete(){
+		return $this->db->delete($this->main_table);
+	}
+	 
+	
 
 	/**
 	 * __get magic
