@@ -514,9 +514,14 @@ if ( ! function_exists('url_title'))
 
 if ( ! function_exists('route_url'))
 {
-	function route_url($id){
+	function route_url($id, $arr=[]){
 		$my_route =& get_router_instance();
-		return base_url($my_route->get_route_id()[$id]);
+		$key = $my_route->get_route_id()[$id];
+		if(count($arr) > 0){
+			$key = str_replace(array('(:any)', '(:num)'), array('%s', '%d'), $key);
+			$key = vsprintf($key, $arr);
+		}
+		return base_url($key);
 	}
 }
 
