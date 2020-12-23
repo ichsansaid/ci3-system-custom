@@ -270,9 +270,10 @@ class CI_Router {
 	{
 		$params = $this->_get_params();
 		$middleware = [];
-		foreach($this->routes_middleware[$this->uri->uri_string] as $key=>$value){
-			array_push($middleware, $key);
-		}
+		if(isset($this->routes_middleware[$this->uri->uri_string]))
+			foreach($this->routes_middleware[$this->uri->uri_string] as $key=>$value){
+				array_push($middleware, $key);
+			}
 		return [
 			'middlewares' => $middleware,
 			'params' => $params

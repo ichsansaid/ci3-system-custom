@@ -59,14 +59,13 @@ class CI_Model {
 	private $data_clean;
 	private $form_error = [];
 	private $form_use;
+	private $data_bind;
 
 	protected $forms = [];
 	protected $form_lang = [];
 	protected $main_table;
 
-	public function __construct() {
-
-	}
+	public function __construct() {}
 
 	public function data($data = -1){
 		if($data == -1){
@@ -127,11 +126,30 @@ class CI_Model {
 	}
 
 	public function db_update($data, $where = []){
-		return $this->db->update($this->main_table, $data, $where);
+		if($this->data_bind == null){
+			if(isset($this->data_bind['id'])){
+				$this->db->where('id', $this->data_bind['id']);
+				return false;
+			}
+		} else {
+			$this->db->where($where);
+			$this->db->update($this->main_table, $data);
+			return true;
+		}
+		
 	}
 
 	public function db_delete(){
 		return $this->db->delete($this->main_table);
+	}
+
+	public function db_bind(){
+		$data_bind = $this->db_get()->result_array();
+		if(count($data_bind) > 0){
+			$this->data_bind = $data_bind;
+		} else {
+			$this->data_bind = null;
+		}
 	}
 	 
 	
