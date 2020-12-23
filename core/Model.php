@@ -75,11 +75,21 @@ class CI_Model {
 		return $this;
 	}
 
-	public function data_clean(){
-		return $this->data_clean;
+	public function data_clean($form = null){
+		if($form == null){
+			if(count($this->form_use) > 0){
+				return $this->data_clean[$this->form_use];
+			} else {
+				return [];
+			}
+		}
+		if(isset($this->data_clean[$form])){
+			return $this->data_clean[$form];
+		}
+		return [];
 	}
 
-	public function form_error(){
+	public function form_error($form = null){
 		return $this->form_error;
 	}
 
@@ -105,7 +115,7 @@ class CI_Model {
 			}
 			if($this->form_validation->run() == true){
 				foreach($this->get_form() as $key=>$value){
-					$this->data_clean[$key] = $this->data_model[$key];
+					$this->data_clean[$this->form_use][$key] = $this->data_model[$key];
 				}
 				return true;
 			} else {
@@ -117,6 +127,23 @@ class CI_Model {
 		}
 	}
 
+	public function create($form = null){
+		$this->db_insert($this->data_clean($form));
+	}
+
+	public function delete(){
+		$this->db_delete();
+	}
+
+	public function update($form = null, $where = []){
+		if($form == null){
+			$this->db_update($this->data_clean(), $where);
+		} else {
+			$this->db_update($this->data_clean($form), $where);
+		}
+		return true;
+	}
+
 	public function db_get(){
 		return $this->db->get($this->main_table);
 	}
@@ -126,30 +153,34 @@ class CI_Model {
 	}
 
 	public function db_update($data, $where = []){
-		if($this->data_bind == null){
+		if(!$this->data_bind == null){
 			if(isset($this->data_bind['id'])){
 				$this->db->where('id', $this->data_bind['id']);
-				return false;
 			}
-		} else {
-			$this->db->where($where);
-			$this->db->update($this->main_table, $data);
-			return true;
 		}
-		
+		$this->db->where($where);
+		$this->db->update($this->main_table, $data);
+		return true;
 	}
 
 	public function db_delete(){
+		if(!$this->data_bind = null){
+			if(isset($this->data_bind['id'])){
+				$this->db->where('id', $this->data_bind['id']);
+			}
+		}
 		return $this->db->delete($this->main_table);
 	}
 
-	public function db_bind(){
+	public function bind($pk){
+		$this->db->where('id', $pk);
 		$data_bind = $this->db_get()->result_array();
 		if(count($data_bind) > 0){
-			$this->data_bind = $data_bind;
+			$this->data_bind = $data_bind[0];
 		} else {
 			$this->data_bind = null;
 		}
+		return $this;
 	}
 	 
 	
