@@ -238,7 +238,7 @@ class CI_Router {
 		{
 			include(APPPATH.'config/'.ENVIRONMENT.'/routes.php');
 		}
-		$params = $this->routes_middleware[$this->uri->uri_string];
+		$params = isset($this->routes_middleware[$this->uri->uri_string]) ? $this->routes_middleware[$this->uri->uri_string] : [];
 		$return = [];
 		foreach($this->selected_routes_id as $id)
 		{

@@ -54,11 +54,13 @@ class CI_Model {
 	 * @link	https://github.com/bcit-ci/CodeIgniter/issues/5332
 	 * @return	void
 	 */
-
+	
 	private $data_model = [];
 	private $data_clean;
 	private $form_error = [];
-	private $field_use;
+	private $form_use;
+
+	protected $forms = [];
 	protected $form_lang = [];
 	protected $main_table;
 
@@ -83,19 +85,19 @@ class CI_Model {
 	}
 
 	public function use_form($id){
-		$this->field_use = $id;
+		$this->form_use = $id;
 		return $this;
 	}
 
 	public function get_form(){
-		return $this->accepted_form[$this->field_use];
+		return $this->forms[$this->form_use];
 	}
 
 	public function valid(){
-		$id = $this->field_use;
-		if(isset($this->accepted_form[$id])){
+		$id = $this->form_use;
+		if(isset($this->forms[$id])){
 			$this->form_validation->set_rules($this->data_model);
-			foreach($this->accepted_form[$id] as $key=>$value){
+			foreach($this->forms[$id] as $key=>$value){
 				if(count($this->form_lang) > 1){
 					$this->form_validation->set_rules($key, $value[0], isset($value[1]) ? $value[1] : [], $this->form_lang);
 				} else {
