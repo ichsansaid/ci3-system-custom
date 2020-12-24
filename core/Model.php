@@ -82,7 +82,7 @@ class CI_Model {
 	public function data_clean($form = null){
 		if($form == null){
 			if(count($this->form_use) > 0){
-				return $this->data_clean[$this->form_use];
+				return $this->data_clean[$this->form_use[count($this->form_use) - 1]];
 			} else {
 				return [];
 			}
@@ -93,48 +93,58 @@ class CI_Model {
 		return [];
 	}
 
-	public function form_error($form = null){
+	public function form_error(){
 		return $this->form_error;
 	}
 
 	public function use_form($id){
-		$this->form_use = $id;
+		if(!is_array($id)){
+			$this->form_use = [$id];
+		} else {
+			$this->form_use = $id;
+		}
 		return $this;
 	}
 
-	public function get_form(){
+	public function get_form($id){
 		if($this->form() !== null){
 			$this->forms = $this->form();
 		}
-		return $this->forms[$this->form_use];
+		return $this->forms[$id];
 	}
 
 	public function valid(){
-		$id = $this->form_use;
+		$ids = $this->form_use;
 		if($this->form() !== null){
 			$this->forms = $this->form();
 		}
-		if(isset($this->forms[$id])){
-			$this->form_validation->set_rules($this->data_model);
-			foreach($this->forms[$id] as $key=>$value){
-				if(count($this->form_lang) > 1){
-					$this->form_validation->set_rules($key, $value[0], isset($value[1]) ? $value[1] : [], $this->form_lang);
-				} else {
-					$this->form_validation->set_rules($key, $value[0], isset($value[1]) ? $value[1] : []);
+		$id;
+		if(!is_array($ids)){
+			$ids = [$ids];
+		}
+		foreach($ids as $id){
+			if(isset($this->forms[$id])){
+				$this->form_validation->set_rules($this->data_model);
+				foreach($this->forms[$id] as $key=>$value){
+					if(count($this->form_lang) > 1){
+						$this->form_validation->set_rules($key, $value[0], isset($value[1]) ? $value[1] : [], $this->form_lang);
+					} else {
+						$this->form_validation->set_rules($key, $value[0], isset($value[1]) ? $value[1] : []);
+					}
 				}
+				
 			}
-			if($this->form_validation->run() == true){
-				foreach($this->get_form() as $key=>$value){
-					$this->data_clean[$this->form_use][$key] = $this->data_model[$key];
+		}
+		if($this->form_validation->run() == true){
+			foreach($this->forms as $key=>$value){
+				foreach($value as $key2=>$value2){
+					$this->data_clean[$key][$key2] = $this->data_model[$key2];
 				}
-				return true;
-			} else {
-				$this->form_error = $this->form_validation->error_array();
-				return false;
 			}
 		} else {
-			return true;
+			$this->form_error = $this->form_validation->error_array();
 		}
+		return count($this->form_error) <= 0;
 	}
 
 	public function create($form = null){
@@ -147,7 +157,7 @@ class CI_Model {
 
 	public function update($form = null, $where = []){
 		if($form == null){
-			$this->db_update($this->data_clean(), $where);
+			$this->db_update($this->data_clean($this->form_use[count($this->form_use) - 1]), $where);
 		} else {
 			$this->db_update($this->data_clean($form), $where);
 		}
