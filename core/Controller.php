@@ -204,10 +204,6 @@ class CI_Controller {
 	public function __construct()
 	{
 		self::$instance =& $this;
-
-		// Assign all the class objects that were instantiated by the
-		// bootstrap file (CodeIgniter.php) to local class variables
-		// so that CI can run as one big super object.
 		foreach (is_loaded() as $var => $class)
 		{
 			$this->$var =& load_class($class);
@@ -225,7 +221,12 @@ class CI_Controller {
 				$this->load->model($row[0]);
 			}
 		}
+		$this->pre_open();
 		log_message('info', 'Controller Class Initialized');
+	}
+
+	protected function pre_open(){
+		
 	}
 
 	// --------------------------------------------------------------------
@@ -295,5 +296,4 @@ class CI_Controller {
             }
         }
 	}
-
 }
