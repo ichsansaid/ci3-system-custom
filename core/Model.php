@@ -67,6 +67,10 @@ class CI_Model {
 
 	public function __construct() {}
 
+	public function form(){
+		return null;
+	}
+
 	public function data($data = -1){
 		if($data == -1){
 			return $this->data_model;
@@ -99,11 +103,17 @@ class CI_Model {
 	}
 
 	public function get_form(){
+		if($this->form() !== null){
+			$this->forms = $this->form();
+		}
 		return $this->forms[$this->form_use];
 	}
 
 	public function valid(){
 		$id = $this->form_use;
+		if($this->form() !== null){
+			$this->forms = $this->form();
+		}
 		if(isset($this->forms[$id])){
 			$this->form_validation->set_rules($this->data_model);
 			foreach($this->forms[$id] as $key=>$value){
@@ -181,6 +191,10 @@ class CI_Model {
 			$this->data_bind = null;
 		}
 		return $this;
+	}
+
+	public function is_null(){
+		return $this->data_bind == null;
 	}
 	 
 	
