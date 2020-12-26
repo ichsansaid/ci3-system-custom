@@ -214,11 +214,11 @@ class CI_Controller {
 		$this->room = new RoomLoader($this);
 		
 		$this->runMiddleware();
-		foreach($this->models as $row){
-			if(count($row) > 1){
-				$this->load->model($row[0], $row[1]);
+		foreach($this->models as $key=>$row){
+			if(is_string($key)){
+				$this->load->model($key, $row);
 			} else {
-				$this->load->model($row[0]);
+				$this->load->model($row);
 			}
 		}
 		$this->pre_open();

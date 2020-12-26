@@ -46,6 +46,11 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  * @author		EllisLab Dev Team
  * @link		https://codeigniter.com/user_guide/libraries/config.html
  */
+
+function customError($errno, $errstr) {
+	echo "<b>Error:</b> [$errno] $errstr";
+}
+
 class CI_Model {
 
 	/**
@@ -68,13 +73,19 @@ class CI_Model {
 	protected $selected_form;
 
 	public function __construct() {
+		set_error_handler("customError");
 		foreach($this->import_models as $key=>$value){
-			if(isset($value[1])){
-				$this->load->model($value[0], $value[1]);
+			if(is_string($key)){
+				get_instance()->load->model($key, $value);
 			} else {
-				$this->load->model($value[0]);
+				get_instance()->load->model($value);
 			}
 		}
+		$this->pre_load();
+	}
+
+	protected function pre_load(){
+		return;
 	}
 
 	public function form(){
@@ -115,10 +126,14 @@ class CI_Model {
 	}
 
 	public function use_form($id){
-		if(!is_array($id)){
-			$this->form_use = [$id];
+		if(isset($this->form()[$id])){
+			if(!is_array($id)){
+				$this->form_use = [$id];
+			} else {
+				$this->form_use = $id;
+			}
 		} else {
-			$this->form_use = $id;
+			show_error("Form not exist");
 		}
 		return $this;
 	}
@@ -142,6 +157,11 @@ class CI_Model {
 				$this->form_validation->set_data($this->data_model);
 				foreach($this->form()[$id] as $key=>$value){
 					if($key != '__table'){
+						foreach($value[1] as $key2=>$value2){
+							if($key2 === '__create' || $key2 === '__update' || $key2 === '__filter'){
+								unset($value[1][$key2]);
+							}
+						}
 						if(count($this->form_lang) > 1){
 							$this->form_validation->set_rules($key, $value[0], isset($value[1]) ? $value[1] : [], $this->form_lang);
 						} else {
@@ -199,16 +219,21 @@ class CI_Model {
 			}
 		}
 		$table = $this->get_table_form($form);
-		$find = false;
 		foreach($this->form()[$form] as $key2=>$value2){
 			if(is_array($value2)){
 				foreach($value2 as $key3=>$value3){
 					if(is_array($value3)){
 						foreach($value3 as $key4=>$value4){
-							if($key4 === "__create"){
-								$this->data_clean[$form][$key2] = $value4();
-								$find=true;
-								break;
+							if($key4 === '__filter' || $key4 === '__create'){
+								$ret = $value4($key2, $this->data_clean);
+								if(!is_array($ret)){
+									$ret = [$ret];
+								}
+								if(count($ret) > 1){
+									$this->data_clean[$form][$ret[1]] = $ret[0];
+								} else {
+									$this->data_clean[$form][$key2] = $ret[0];
+								}
 							}
 						}
 					}
@@ -238,10 +263,30 @@ class CI_Model {
 		}
 		$table = $this->get_table_form($form);
 		if($form == null){
-			$this->db_update($this->data_clean($this->form_use[count($this->form_use) - 1]), $table);
-		} else {
-			$this->db_update($this->data_clean($form), $table);
+			$form = $this->form_use[count($this->form_use) - 1];
 		}
+		foreach($this->form()[$form] as $key2=>$value2){
+			if(is_array($value2)){
+				foreach($value2 as $key3=>$value3){
+					if(is_array($value3)){
+						foreach($value3 as $key4=>$value4){
+							if($key4 === '__filter' || $key4 === '__update'){
+								$ret = $value4($key2, $this->data_clean);
+								if(!is_array($ret)){
+									$ret = [$ret];
+								}
+								if(count($ret) > 1){
+									$this->data_clean[$form][$ret[1]] = $ret[0];
+								} else {
+									$this->data_clean[$form][$key] = $ret[0];
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		$this->db_update($this->data_clean($form), $table);
 		return true;
 	}
 
