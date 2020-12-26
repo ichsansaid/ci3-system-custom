@@ -77,9 +77,13 @@ class CI_Model {
 		set_error_handler("customError");
 		foreach($this->import_models as $key=>$value){
 			if(is_string($key)){
-				get_instance()->load->model($key, $value);
+				if(!isset(get_class()->$value)){
+					get_instance()->load->model($key, $value);
+				}
 			} else {
-				get_instance()->load->model($value);
+				if(!isset(get_class()->$value)){
+					get_instance()->load->model($value);
+				}
 			}
 		}
 		$this->pre_load();
