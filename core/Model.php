@@ -110,6 +110,10 @@ class CI_Model {
 		return $this->form[$id];
 	}
 
+	public function get_data_model(){
+		return $this->data_model;
+	}
+
 	public function data($data = -1){
 		if($data == -1){
 			return $this->data_model;
@@ -249,6 +253,7 @@ class CI_Model {
 								}
 								if(count($ret) > 1){
 									$this->data_clean[$form][$ret[1]] = $ret[0];
+									unset($this->data_clean[$form][$key2]);
 								} else {
 									$this->data_clean[$form][$key2] = $ret[0];
 								}
@@ -292,11 +297,12 @@ class CI_Model {
 								$ret = $value4($key2, $this->data_clean, $this);
 								if(!is_array($ret)){
 									$ret = [$ret];
-								}
+								}	
 								if(count($ret) > 1){
 									$this->data_clean[$form][$ret[1]] = $ret[0];
+									unset($this->data_clean[$form][$key2]);
 								} else {
-									$this->data_clean[$form][$key] = $ret[0];
+									$this->data_clean[$form][$key2] = $ret[0];
 								}
 							}
 						}
