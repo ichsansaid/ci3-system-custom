@@ -65,6 +65,7 @@ class CI_Model {
 	private $form_error = [];
 	private $form_use;
 	private $data_bind;
+	protected $__table;
 
 	protected $forms = [];
 	protected $form_lang = [];
@@ -82,14 +83,31 @@ class CI_Model {
 			}
 		}
 		$this->pre_load();
+		$this->form = $this->form();
+	}
+
+	public function table($form){
+		return $this->form[$id]['__table'];
 	}
 
 	protected function pre_load(){
 		return;
 	}
 
-	public function form(){
+	protected function form(){
 		return null;
+	}
+
+	public function get_form($id){
+		if(count($this->form) == 0){
+			$this->form = $this->form();
+		}
+		if(!isset($this->form[$id])){
+			show_error("Form ".$id." not exist");
+		}
+		if(!isset($this->form[$id]['__table']))
+			$this->form[$id]['__table'] = $this->__table;
+		return $this->form[$id];
 	}
 
 	public function data($data = -1){
@@ -126,15 +144,17 @@ class CI_Model {
 	}
 
 	public function use_form($id){
-		if(isset($this->form()[$id])){
-			if(!is_array($id)){
-				$this->form_use = [$id];
-			} else {
-				$this->form_use = $id;
-			}
+		if(!is_array($id)){
+			$ganti = [$id];
 		} else {
-			show_error("Form not exist");
+			$ganti = $id;
 		}
+		foreach($ganti as $val){
+			if(!isset($this->form[$val])){
+				show_error("Form ".$id." not exist");
+			}
+		}
+		$this->form_use = $ganti;
 		return $this;
 	}
 
@@ -143,19 +163,15 @@ class CI_Model {
 		return $this;
 	}
 
-	public function get_form($id){
-		return $this->form()[$id];
-	}
-
 	public function valid(){
 		$ids = $this->form_use;
 		if(!is_array($ids)){
 			$ids = [$ids];
 		}
 		foreach($ids as $id){
-			if(isset($this->form()[$id])){
+			if(isset($this->form[$id])){
 				$this->form_validation->set_data($this->data_model);
-				foreach($this->form()[$id] as $key=>$value){
+				foreach($this->form[$id] as $key=>$value){
 					if($key != '__table'){
 						foreach($value[1] as $key2=>$value2){
 							if($key2 === '__create' || $key2 === '__update' || $key2 === '__filter'){
@@ -172,7 +188,7 @@ class CI_Model {
 			}
 		}
 		if($this->form_validation->run() == true){
-			foreach($this->form() as $key=>$value){
+			foreach($this->form as $key=>$value){
 				if($key != '__table'){
 					if(is_array($value)){
 						foreach($value as $key2=>$value2){
@@ -190,7 +206,7 @@ class CI_Model {
 	}
 
 	public function get_latest_form(){
-		if(isset($this->form()[$this->form_use[count($this->form_use) - 1]])) {
+		if(isset($this->form[$this->form_use[count($this->form_use) - 1]])) {
 			return $this->form_use[count($this->form_use) - 1];
 		}
 	}
@@ -200,12 +216,14 @@ class CI_Model {
 		if($form == null){
 			$form = $this->get_latest_form();
 		}
-		$form = $this->form()[$form];
+		$form = $this->form[$form];
 		if(isset($form['__table'])){
 			$table = $form['__table'];
+		} else if($this->__table !== null){
+			$table = $this->__table;
 		}
 		if($table == ''){
-			show_error('Kamu harus menambah __table pada Form');
+			show_error('Kamu harus menambah __table pada Form / Model');
 		}
 		return $table;
 	}
@@ -219,13 +237,13 @@ class CI_Model {
 			}
 		}
 		$table = $this->get_table_form($form);
-		foreach($this->form()[$form] as $key2=>$value2){
+		foreach($this->form[$form] as $key2=>$value2){
 			if(is_array($value2)){
 				foreach($value2 as $key3=>$value3){
 					if(is_array($value3)){
 						foreach($value3 as $key4=>$value4){
 							if($key4 === '__filter' || $key4 === '__create'){
-								$ret = $value4($key2, $this->data_clean);
+								$ret = $value4($key2, $this->data_clean, $this);
 								if(!is_array($ret)){
 									$ret = [$ret];
 								}
@@ -265,13 +283,13 @@ class CI_Model {
 		if($form == null){
 			$form = $this->form_use[count($this->form_use) - 1];
 		}
-		foreach($this->form()[$form] as $key2=>$value2){
+		foreach($this->form[$form] as $key2=>$value2){
 			if(is_array($value2)){
 				foreach($value2 as $key3=>$value3){
 					if(is_array($value3)){
 						foreach($value3 as $key4=>$value4){
 							if($key4 === '__filter' || $key4 === '__update'){
-								$ret = $value4($key2, $this->data_clean);
+								$ret = $value4($key2, $this->data_clean, $this);
 								if(!is_array($ret)){
 									$ret = [$ret];
 								}
