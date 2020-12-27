@@ -49,6 +49,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 function customError($errno, $errstr) {
 	echo "<b>Error:</b> [$errno] $errstr";
+	die();
 }
 
 class CI_Model {
@@ -77,11 +78,11 @@ class CI_Model {
 		set_error_handler("customError");
 		foreach($this->import_models as $key=>$value){
 			if(is_string($key)){
-				if(!isset(get_class()->$value)){
+				if(!isset(get_instance()->$value)){
 					get_instance()->load->model($key, $value);
 				}
 			} else {
-				if(!isset(get_class()->$value)){
+				if(!isset(get_instance()->$value)){
 					get_instance()->load->model($value);
 				}
 			}
@@ -102,16 +103,21 @@ class CI_Model {
 		return null;
 	}
 
-	public function get_form($id){
-		if(count($this->form) == 0){
-			$this->form = $this->form();
+	public function get_form($id=null){
+		if($id !== null){
+			if(count($this->form) == 0){
+				$this->form = $this->form();
+			}
+			if(!isset($this->form[$id])){
+				show_error("Form ".$id." not exist");
+			}
+			if(!isset($this->form[$id]['__table']))
+				$this->form[$id]['__table'] = $this->__table;
+			return $this->form[$id];
+		} else {
+			return $this->form;
 		}
-		if(!isset($this->form[$id])){
-			show_error("Form ".$id." not exist");
-		}
-		if(!isset($this->form[$id]['__table']))
-			$this->form[$id]['__table'] = $this->__table;
-		return $this->form[$id];
+		
 	}
 
 	public function get_data_model(){
@@ -159,7 +165,17 @@ class CI_Model {
 		}
 		foreach($ganti as $val){
 			if(!isset($this->form[$val])){
-				show_error("Form ".$id." not exist");
+				$sss = false;
+				foreach($this->import_models as $key=>$value){
+					if(isset(get_instance()->$value)){
+						if(isset(get_instance()->$value->get_form()[$val])){
+							$this->form[$val]=get_instance()->$value->get_form()[$val];
+							$sss=true;
+							break;
+						}
+					}
+				}
+				if($sss === false) show_error("Form ".$id." not exist");
 			}
 		}
 		$this->form_use = $ganti;
