@@ -2314,7 +2314,7 @@ abstract class CI_DB_query_builder extends CI_DB_driver {
 	 * @param	bool	$select_override
 	 * @return	string
 	 */
-	protected function _compile_select($select_override = FALSE)
+	public function _compile_select($select_override = FALSE)
 	{
 		// Combine any cached components with the current statements
 		$this->_merge_cache();

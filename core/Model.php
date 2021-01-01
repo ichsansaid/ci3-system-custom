@@ -252,6 +252,85 @@ class CI_Model {
 		return $table;
 	}
 
+	public function __toString()
+    {
+        return $this->__table;
+	}
+
+	public function datatable($form, $type='get')
+	{
+		if($type == 'get'){
+			$draw = intval($this->input->get("draw"));
+			$start = intval($this->input->get("start"));
+			$length = intval($this->input->get("length"));
+			$order = $this->input->get("order");
+			$search = $this->input->get("search");
+		} else {
+			$draw = intval($this->input->post("draw"));
+			$start = intval($this->input->post("start"));
+			$length = intval($this->input->post("length"));
+			$order = $this->input->post("order");
+			$search = $this->input->post("search");
+		}
+		
+		$search = $search['value'];
+		$col = 0;
+		$dir = "";
+		$fields = [];
+		foreach($this->get_form($form) as $key=>$value){
+			if($key !== '__table'){
+				array_push($fields, $key);
+			}
+		}
+		$sel = implode($fields, ",");
+		$this->db->select($sel)->from($this->__table);
+		$qr = $this->db->_compile_select(); 
+		if (!empty($order)) {
+			foreach ($order as $o) {
+				$col = $o['column'];
+				$dir = $o['dir'];
+			}
+		}
+		if (!isset($fields[$col])) {
+			$order = null;
+		} else {
+			$order = $fields[$col];
+		}
+		if ($order != null) {
+			$this->db->order_by($order, $dir);
+		}
+		if (!empty($search)) {
+			$x = 0;
+			foreach ($fields as $sterm) {
+				if ($x == 0) {
+					$this->db->like($sterm, $search);
+				} else {
+					$this->db->or_like($sterm, $search);
+				}
+				$x++;
+			}
+		}
+		$this->db->limit($length, $start);
+		$results = $this->db->query($this->db->_compile_select());
+		$data = array();
+		foreach ($results->result_array() as $rows) {
+			$arr = [];
+			foreach($rows as $value){
+				$arr[] = $value;
+			}
+			$data[] = $arr;
+		}
+		$total_employees = $this->db->query($qr)->num_rows();
+		$output = array(
+			"draw" => $draw,
+			"recordsTotal" => $total_employees,
+			"recordsFiltered" => $total_employees,
+			"data" => $data
+		);
+		return $output;
+	}
+
+
 	public function create($form = null, $additional_data=[]){
 		if($form == null){
 			if($this->selected_form != null){
@@ -389,8 +468,14 @@ class CI_Model {
 		return $this->data_bind[$table];
 	}
 
-	public function bind($pk, $form = null){
-		$this->db->where('id', $pk);
+	public function bind($pk = null, $form = null){
+		if($pk !== null){
+			if(!is_array($pk)){
+				$this->db->where($pk);
+			} else {
+				$this->db->where('id', $pk);
+			}
+		}
 		if($form == null){
 			if($this->selected_form != null){
 				$form = $this->selected_form;
