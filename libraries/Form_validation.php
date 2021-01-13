@@ -418,7 +418,6 @@ class CI_Form_validation {
 		$validation_array = empty($this->validation_data)
 			? $_POST
 			: $this->validation_data;
-
 		// Does the _field_data array containing the validation rules exist?
 		// If not, we look to see if they were assigned via a config file
 		if (count($this->_field_data) === 0)
@@ -690,6 +689,9 @@ class CI_Form_validation {
 			// Strip the parameter (if exists) from the rule
 			// Rules can contain a parameter: max_length[5]
 			$param = FALSE;
+			// echo '<pre>';
+			// print_r($rule);
+			// echo '</pre>';
 			if ( ! $callable && preg_match('/(.*?)\[(.*)\]/', $rule, $match))
 			{
 				$rule = $match[1];

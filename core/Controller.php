@@ -122,7 +122,9 @@ class Room{
 				return $default;
 			}
 		}
-		return $this->data[$key];
+		if(isset($this->data[$key]))
+			return $this->data[$key];
+		return "";
 	}
 
 	public function alldata($params=NULL,$type = NULL){

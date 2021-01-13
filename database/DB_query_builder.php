@@ -471,8 +471,14 @@ abstract class CI_DB_query_builder extends CI_DB_driver {
 	 */
 	public function from($from)
 	{
+		// echo '<pre>';
+		// print_r($from);
+		// echo '</pre>';
 		foreach ((array) $from as $val)
 		{
+			// echo '<pre>';
+			// print_r($val);
+			// echo '</pre>';
 			if (strpos($val, ',') !== FALSE)
 			{
 				foreach (explode(',', $val) as $v)

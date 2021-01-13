@@ -371,9 +371,8 @@ class CI_Upload {
 	 * @param	string	$field
 	 * @return	bool
 	 */
-	public function do_upload($field = 'userfile')
-	{
-		// Is $_FILES[$field] set? If not, no reason to continue.
+
+	public function valid($field = 'userfile'){
 		if (isset($_FILES[$field]))
 		{
 			$_file = $_FILES[$field];
@@ -394,7 +393,6 @@ class CI_Upload {
 				$_file = $_file[$field];
 			}
 		}
-
 		if ( ! isset($_file))
 		{
 			$this->set_error('upload_no_file_selected', 'debug');
@@ -555,14 +553,12 @@ class CI_Upload {
 			$this->set_error('upload_unable_to_write_file', 'error');
 			return FALSE;
 		}
+		return TRUE;
 
-		/*
-		 * Move the file to the final destination
-		 * To deal with different server configurations
-		 * we'll attempt to use copy() first. If that fails
-		 * we'll use move_uploaded_file(). One of the two should
-		 * reliably work in most environments
-		 */
+	}
+
+	public function do_upload($field = 'userfile')
+	{
 		if ( ! @copy($this->file_temp, $this->upload_path.$this->file_name))
 		{
 			if ( ! @move_uploaded_file($this->file_temp, $this->upload_path.$this->file_name))
