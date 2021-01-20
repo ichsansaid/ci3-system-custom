@@ -105,11 +105,15 @@ class CI_Model
 		}
 	}
 
-
 	public function table($form = null)
 	{
 		if ($form == null) return $this->__table;
 		return $this->form[$form]['__table'];
+	}
+
+	public function list()
+	{
+		return $this->db_get($this->__table)->result_array();
 	}
 
 
@@ -493,6 +497,76 @@ class CI_Model
 		);
 		return $output;
 	}
+
+	public function datatable($form = null, $field = null, $type = 'get')
+	{
+		$draw = "";
+		$start = "";
+		$length = "";
+		$order = "";
+		$search = "";
+		$draw = intval($this->input->$type("draw"));
+		$start = intval($this->input->$type("start"));
+		$length = intval($this->input->$type("length"));
+		$order = $this->input->$type("order");
+		$search = $this->input->$type("search");
+		$search = $search['value'];
+		$col = 0;
+		$dir = "";
+		$fields = [];
+		if ($field == null) {
+			if ($form !== null) {
+				foreach ($this->get_form($form) as $key => $value) {
+					if ($key !== '__table') {
+						array_push($fields, $key);
+					}
+				}
+			}
+		} else {
+			$fields = $field;
+		}
+		$sel = implode(",", $fields);
+		$table = $form !== null ?  $this->get_form($form)['__table'] : $this->__table;
+		$this->db->select($sel)->from($table);
+		$qr = $this->db->_compile_select();
+		if (!empty($order)) {
+			foreach ($order as $o) {
+				$col = $o['column'];
+				$dir = $o['dir'];
+			}
+		}
+		if (!isset($fields[$col])) {
+			$order = null;
+		} else {
+			$order = $fields[$col];
+		}
+		if ($order != null) {
+			$this->db->order_by($order, $dir);
+		}
+		if (!empty($search)) {
+			$x = 0;
+			foreach ($fields as $sterm) {
+				if ($x == 0) {
+					$this->db->like($sterm, $search);
+				} else {
+					$this->db->or_like($sterm, $search);
+				}
+				$x++;
+			}
+		}
+		$this->db->limit($length, $start);
+		$results = $this->db->query($this->db->_compile_select());
+		$data = $results->result_array();
+		$total_employees = $this->db->query($qr)->num_rows();
+		$output = array(
+			"draw" => $draw,
+			"recordsTotal" => $total_employees,
+			"recordsFiltered" => $total_employees,
+			"data" => $data
+		);
+		return $output;
+	}
+
 
 	public function create($form = null, $additional_data = [])
 	{
